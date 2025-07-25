@@ -1,36 +1,56 @@
-import { Prayer } from '@prisma/client';
+"use client";
 
-export default async function WallPage() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/prayers`, {
-    cache: 'no-store',
-  });
-  const prayers: Prayer[] = await res.json();
+import { useEffect, useState } from "react";
+
+type Prayer = {
+  id: number;
+  text: string;
+  createdAt: string;
+};
+
+export default function WallPage() {
+  const [prayers, setPrayers] = useState<Prayer[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPrayers = async () => {
+      try {
+        const res = await fetch("/api/prayers");
+        const data = await res.json();
+        setPrayers(data);
+      } catch (error) {
+        console.error("Failed to load prayers", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPrayers();
+  }, []);
 
   return (
-    <main className="min-h-screen bg-white p-4">
-      <h1 className="text-3xl font-bold text-center text-green-700 mb-6">
-        🙏 Prayer Wall
-      </h1>
+    <div className="p-4 max-w-xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">🙏 Prayer Wall</h1>
 
-      <div className="max-w-2xl mx-auto space-y-4">
-        {prayers.length === 0 ? (
-          <p className="text-center text-gray-500">No prayers yet.</p>
-        ) : (
-          prayers
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-            .map((p) => (
-              <div
-                key={p.id}
-                className="bg-green-50 border border-green-200 p-4 rounded-lg shadow"
-              >
-                <p className="text-gray-800">{p.text}</p>
-                <p className="text-xs text-right text-gray-400 mt-2">
-                  {new Date(p.createdAt).toLocaleString()}
-                </p>
-              </div>
-            ))
-        )}
-      </div>
-    </main>
+      {loading ? (
+        <p>Loading prayers...</p>
+      ) : prayers.length === 0 ? (
+        <p>No intentions yet. Be the first to pray!</p>
+      ) : (
+        <ul className="space-y-3">
+          {prayers.map((prayer) => (
+            <li
+              key={prayer.id}
+              className="bg-white p-4 rounded shadow text-gray-800"
+            >
+              <p>{prayer.text}</p>
+              <p className="text-xs text-gray-400">
+                {new Date(prayer.createdAt).toLocaleString()}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
